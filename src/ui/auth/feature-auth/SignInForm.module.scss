@@ -1,0 +1,48 @@
+.container {
+  @include flexbox(48px, column, flex-start, stretch);
+  width: 520px;
+
+  .inputs {
+    @include flexbox(32px, column, flex-start, stretch);
+  }
+
+  .button {
+    margin-bottom: 16px;
+  }
+
+  .divider {
+    position: relative;
+    margin: 12px 0;
+    text-align: center;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      width: 100%;
+      height: 1px;
+      background-color: #ddd;
+    }
+
+    span {
+      position: relative;
+      padding: 0 16px;
+      background-color: white;
+      color: #666;
+      font-size: 14px;
+    }
+  }
+}
+
+.message {
+  @include glyph15Medium;
+  margin-top: 32px;
+  text-align: center;
+
+  .signup {
+    margin-left: 4px;
+    color: $red;
+    text-decoration: underline;
+  }
+}
