@@ -12,7 +12,14 @@ export type Meeting = {
   alarms: string[],
 }
 
-export type AxiosErrorData = { message: string }
+export type AxiosErrorData = {
+  message: string
+  errors?: Array<{
+    path: string
+    message: string
+  }>
+  stack?: string
+}
 
 // Enum
 export enum ContractStatus {

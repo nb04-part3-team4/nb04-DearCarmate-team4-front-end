@@ -1,7 +1,9 @@
 import { useMutation } from '@tanstack/react-query'
-import axios from 'axios'
+import axios, { AxiosError } from 'axios'
 import { useRouter } from 'next/navigation'
 import { setTokenCookies } from '@shared/auth'
+import { AxiosErrorData } from '@shared/types'
+import useConfirmModal from '@ui/shared/modal/confirm-modal/useConfirmModal'
 
 interface GoogleLoginRequest {
   token: string
@@ -33,6 +35,7 @@ export interface GoogleUserInfo {
 
 const useGoogleLogin = () => {
   const router = useRouter()
+  const { openConfirmModal } = useConfirmModal()
 
   return useMutation({
     mutationFn: async (data: GoogleLoginRequest) => {
@@ -49,7 +52,7 @@ const useGoogleLogin = () => {
       // 메인 페이지로 리다이렉트
       router.push('/')
     },
-    onError: (error: any) => {
+    onError: (error: AxiosError<AxiosErrorData>) => {
       const errorMessage =
         error.response?.data?.message || 'Google 로그인에 실패했습니다'
 
@@ -59,7 +62,7 @@ const useGoogleLogin = () => {
         throw error
       }
 
-      alert(errorMessage)
+      openConfirmModal({ text: errorMessage })
     },
   })
 }
