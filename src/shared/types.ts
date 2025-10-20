@@ -275,6 +275,7 @@ export type UserInfo = {
   employeeNumber: string,
   phoneNumber: string,
   imageUrl: string | null,
+  authProvider: string,
   company: {
     companyName: string,
   }

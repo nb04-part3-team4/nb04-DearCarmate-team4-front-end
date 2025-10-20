@@ -27,6 +27,7 @@ const ProfileForm = ({ }: ProfileFormProps) => {
   const user = useUserStore.use.user()
 
   const authCheckDialogRef = useRef<HTMLDialogElement>(null)
+  const isGoogleUser = user.authProvider === 'google'
 
   const handleEditUser: SubmitHandler<ProfileFormInput> = async (data) => {
     authCheckDialogRef.current?.close()
@@ -44,7 +45,14 @@ const ProfileForm = ({ }: ProfileFormProps) => {
   const handleClickCompletedButton = async () => {
     const isValid = await trigger()
     if (!isValid) return
-    authCheckDialogRef.current?.showModal()
+
+    // 구글 사용자는 바로 수정, 일반 사용자는 인증 모달 표시
+    if (isGoogleUser) {
+      const data = methods.getValues()
+      handleEditUser(data)
+    } else {
+      authCheckDialogRef.current?.showModal()
+    }
   }
 
   useEffect(() => {
@@ -103,30 +111,34 @@ const ProfileForm = ({ }: ProfileFormProps) => {
               }}
             />
           </div>
-          <div>
-            <FieldLabel label='새 비밀번호' />
-            <PasswordFieldConnect
-              name='password'
-              autoComplete='new-password'
-              rules={{
-                pattern: {
-                  value: PASSWORD_VALIDATION_REGEXP,
-                  message: '영문, 숫자 조합 8~16자리로 입력해주세요',
-                },
-              }}
-            />
-          </div>
-          <div>
-            <FieldLabel label='새 비밀번호 확인' />
-            <PasswordFieldConnect
-              name='passwordConfirmation'
-              autoComplete='new-password'
-              placeholder='새 비밀번호를 한번 더 입력해 주세요'
-              rules={{
-                validate: value => value === methods.getValues('password') || '비밀번호가 일치하지 않습니다',
-              }}
-            />
-          </div>
+          {!isGoogleUser && (
+            <>
+              <div>
+                <FieldLabel label='새 비밀번호' />
+                <PasswordFieldConnect
+                  name='password'
+                  autoComplete='new-password'
+                  rules={{
+                    pattern: {
+                      value: PASSWORD_VALIDATION_REGEXP,
+                      message: '영문, 숫자 조합 8~16자리로 입력해주세요',
+                    },
+                  }}
+                />
+              </div>
+              <div>
+                <FieldLabel label='새 비밀번호 확인' />
+                <PasswordFieldConnect
+                  name='passwordConfirmation'
+                  autoComplete='new-password'
+                  placeholder='새 비밀번호를 한번 더 입력해 주세요'
+                  rules={{
+                    validate: value => value === methods.getValues('password') || '비밀번호가 일치하지 않습니다',
+                  }}
+                />
+              </div>
+            </>
+          )}
         </div>
         <Button
           type='button'
@@ -138,11 +150,13 @@ const ProfileForm = ({ }: ProfileFormProps) => {
           }}
         >확인
         </Button>
-        <AuthCheckModal
-          ref={authCheckDialogRef}
-          fieldName='currentPassword'
-          onClose={() => { authCheckDialogRef.current?.close() }}
-        />
+        {!isGoogleUser && (
+          <AuthCheckModal
+            ref={authCheckDialogRef}
+            fieldName='currentPassword'
+            onClose={() => { authCheckDialogRef.current?.close() }}
+          />
+        )}
       </form>
     </FormProvider>
   )
