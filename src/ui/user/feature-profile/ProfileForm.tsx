@@ -13,6 +13,7 @@ import TextFieldConnect from '@ui/shared/form-field/TextFieldConnect'
 import ImageUploadConnect from '@ui/shared/form-field/ImageUploadConnect/ImageUploadConnect'
 import useEditUser from '../data-access-profile/useEditUser'
 import AuthCheckModal from './AuthCheckModal'
+import GoogleReauthModal from './GoogleReauthModal'
 
 const cx = classNames.bind(styles)
 
@@ -27,10 +28,12 @@ const ProfileForm = ({ }: ProfileFormProps) => {
   const user = useUserStore.use.user()
 
   const authCheckDialogRef = useRef<HTMLDialogElement>(null)
+  const googleReauthDialogRef = useRef<HTMLDialogElement>(null)
   const isGoogleUser = user.authProvider === 'google'
 
   const handleEditUser: SubmitHandler<ProfileFormInput> = async (data) => {
     authCheckDialogRef.current?.close()
+    googleReauthDialogRef.current?.close()
     const editedUserData = {
       ...data,
       password: data.password ? data.password : undefined,
@@ -42,14 +45,19 @@ const ProfileForm = ({ }: ProfileFormProps) => {
     setValue('passwordConfirmation', '')
   }
 
+  const handleGoogleReauthSuccess = (token: string) => {
+    // 구글 재인증 성공 후 정보 수정
+    const data = methods.getValues()
+    handleEditUser(data)
+  }
+
   const handleClickCompletedButton = async () => {
     const isValid = await trigger()
     if (!isValid) return
 
-    // 구글 사용자는 바로 수정, 일반 사용자는 인증 모달 표시
+    // 구글 사용자는 재인증 모달, 일반 사용자는 비밀번호 인증 모달 표시
     if (isGoogleUser) {
-      const data = methods.getValues()
-      handleEditUser(data)
+      googleReauthDialogRef.current?.showModal()
     } else {
       authCheckDialogRef.current?.showModal()
     }
@@ -59,7 +67,10 @@ const ProfileForm = ({ }: ProfileFormProps) => {
     setValue('imageUrl', user.imageUrl)
     setValue('employeeNumber', user.employeeNumber)
     setValue('phoneNumber', user.phoneNumber)
-  }, [setValue, user.imageUrl, user.employeeNumber, user.phoneNumber])
+    if (isGoogleUser) {
+      setValue('name', user.name)
+    }
+  }, [setValue, user.imageUrl, user.employeeNumber, user.phoneNumber, user.name, isGoogleUser])
 
   return (
     <FormProvider {...methods}>
@@ -71,11 +82,21 @@ const ProfileForm = ({ }: ProfileFormProps) => {
           </div>
           <div>
             <FieldLabel label='이름' />
-            <TextField
-              name='name'
-              value={user.name}
-              disabled
-            />
+            {isGoogleUser ? (
+              <TextFieldConnect
+                name='name'
+                placeholder='이름을 입력해 주세요'
+                rules={{
+                  validate: value => value.trim() !== '' || '필수 입력사항입니다.',
+                }}
+              />
+            ) : (
+              <TextField
+                name='name'
+                value={user.name}
+                disabled
+              />
+            )}
           </div>
           <div>
             <FieldLabel label='이메일' />
@@ -150,7 +171,13 @@ const ProfileForm = ({ }: ProfileFormProps) => {
           }}
         >확인
         </Button>
-        {!isGoogleUser && (
+        {isGoogleUser ? (
+          <GoogleReauthModal
+            ref={googleReauthDialogRef}
+            onSuccess={handleGoogleReauthSuccess}
+            onClose={() => { googleReauthDialogRef.current?.close() }}
+          />
+        ) : (
           <AuthCheckModal
             ref={authCheckDialogRef}
             fieldName='currentPassword'
