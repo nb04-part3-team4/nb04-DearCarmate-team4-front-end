@@ -18,6 +18,7 @@ const initialUser: UserInfo = {
   employeeNumber: '',
   phoneNumber: '',
   imageUrl: null,
+  authProvider: 'email',
   company: {
     companyName: '',
   },
