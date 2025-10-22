@@ -384,14 +384,33 @@ export const uploadFile = async (file: File): Promise<{ contractDocumentId: numb
   return response.data
 }
 
-export const uploadImage = async (
-  file: File,
-): Promise<{ imageUrl: string }> => {
-  const formData = new FormData()
-  formData.append('file', file)
-  const response = await axios.postForm<{ imageUrl: string }>(
-    '/images/upload',
-    formData,
-  )
+export interface CloudinarySignature {
+  timestamp: number
+  signature: string
+  apiKey: string
+  cloudName: string
+  folder: string
+}
+
+export const getCloudinarySignature = async () => {
+  const response = await axios.get<CloudinarySignature>('/images/upload')
   return response.data
 }
+
+export const uploadToCloudinary = async (file: File, signature: CloudinarySignature) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('api_key', signature.apiKey)
+  formData.append('timestamp', String(signature.timestamp))
+  formData.append('signature', signature.signature)
+  formData.append('folder', signature.folder)
+
+  const response = await fetch(`https://api.cloudinary.com/v1_1/${signature.cloudName}/image/upload`, {
+    method: 'POST',
+    body: formData,
+  })
+
+  const data = await response.json()
+  return data.secure_url
+}
+
