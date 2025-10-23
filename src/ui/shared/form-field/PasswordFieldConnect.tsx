@@ -1,4 +1,4 @@
-import { Control, Controller, ControllerProps, FieldPath, FieldPathValue, FieldValues, PathValue } from 'react-hook-form'
+import { Control, Controller, ControllerProps, FieldPath, FieldPathValue, FieldValues, PathValue, useFormContext } from 'react-hook-form'
 import { TextFieldProps } from '../input/TextField/TextField'
 import PasswordField from '../input/PasswordField/PasswordField'
 
@@ -22,11 +22,14 @@ const PasswordFieldConnect = <
   rules,
   ...inputProps
 }: PasswordFieldConnectProps<F, N>) => {
+  const formContext = useFormContext<F>()
+  const formControl = control ?? formContext?.control
+
   return (
     <Controller
       name={name}
-      control={control}
-      defaultValue={(defaultValue ?? '') as PathValue<F, N>}
+      control={formControl}
+      defaultValue={defaultValue}
       rules={rules}
       render={({ field, fieldState }) => (
         <PasswordField

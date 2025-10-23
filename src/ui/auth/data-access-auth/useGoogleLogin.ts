@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { setTokenCookies } from '@shared/auth'
 import { AxiosErrorData } from '@shared/types'
 import useConfirmModal from '@ui/shared/modal/confirm-modal/useConfirmModal'
+import useUserStore from '@zustand/useUserStore'
 
 interface GoogleLoginRequest {
   token: string
@@ -19,8 +20,9 @@ interface GoogleLoginResponse {
     phoneNumber?: string
     imageUrl?: string
     isAdmin: boolean
+    authProvider?: string
     company: {
-      companyCode: string
+      companyName: string
     }
   }
   accessToken: string
@@ -36,6 +38,7 @@ export interface GoogleUserInfo {
 const useGoogleLogin = () => {
   const router = useRouter()
   const { openConfirmModal } = useConfirmModal()
+  const setUser = useUserStore.use.setUser()
 
   return useMutation({
     mutationFn: async (data: GoogleLoginRequest) => {
@@ -48,6 +51,9 @@ const useGoogleLogin = () => {
     onSuccess: (data) => {
       // 토큰 저장
       setTokenCookies(data.accessToken, data.refreshToken)
+
+      // 사용자 정보 저장
+      setUser(data.user)
 
       // 메인 페이지로 리다이렉트
       router.push('/')

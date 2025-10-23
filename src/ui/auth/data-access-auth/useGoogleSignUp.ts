@@ -2,6 +2,7 @@ import { useMutation } from '@tanstack/react-query'
 import axios from 'axios'
 import { useRouter } from 'next/navigation'
 import { setTokenCookies } from '@shared/auth'
+import useUserStore from '@zustand/useUserStore'
 
 interface GoogleSignUpRequest {
   token: string
@@ -20,8 +21,9 @@ interface GoogleSignUpResponse {
     phoneNumber?: string
     imageUrl?: string
     isAdmin: boolean
+    authProvider?: string
     company: {
-      companyCode: string
+      companyName: string
     }
   }
   accessToken: string
@@ -30,6 +32,7 @@ interface GoogleSignUpResponse {
 
 const useGoogleSignUp = () => {
   const router = useRouter()
+  const setUser = useUserStore.use.setUser()
 
   return useMutation({
     mutationFn: async (data: GoogleSignUpRequest) => {
@@ -42,6 +45,9 @@ const useGoogleSignUp = () => {
     onSuccess: (data) => {
       // 토큰 저장
       setTokenCookies(data.accessToken, data.refreshToken)
+
+      // 사용자 정보 저장
+      setUser(data.user)
 
       // 메인 페이지로 리다이렉트
       alert('회원가입이 완료되었습니다!')

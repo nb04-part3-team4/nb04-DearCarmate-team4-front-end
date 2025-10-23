@@ -1,4 +1,4 @@
-import { Control, Controller, ControllerProps, FieldPath, FieldPathValue, FieldValues, PathValue } from 'react-hook-form'
+import { Control, Controller, ControllerProps, FieldPath, FieldPathValue, FieldValues, PathValue, useFormContext } from 'react-hook-form'
 import TextField, { TextFieldProps } from '../input/TextField/TextField'
 
 type TextFieldConnectProps<
@@ -21,11 +21,14 @@ const TextFieldConnect = <
   rules,
   ...inputProps
 }: TextFieldConnectProps<F, N>) => {
+  const formContext = useFormContext<F>()
+  const formControl = control ?? formContext?.control
+
   return (
     <Controller
       name={name}
-      control={control}
-      defaultValue={(defaultValue ?? '') as PathValue<F, N>}
+      control={formControl}
+      defaultValue={defaultValue}
       rules={rules}
       render={({ field, fieldState }) => (
         <TextField

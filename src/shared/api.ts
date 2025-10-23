@@ -49,6 +49,16 @@ export const signUp = async (data: SignUpFormInput) => {
   return response.data
 }
 
+export interface GoogleReauthResponse {
+  verified: boolean
+  email: string
+}
+
+export const googleReauth = async (token: string) => {
+  const response = await axios.post<GoogleReauthResponse>('/auth/google/reauth', { token })
+  return response.data
+}
+
 // User related APIs
 export const getUserInfo = async () => {
   const response = await axios.get<UserInfo>('/users/me')

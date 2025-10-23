@@ -21,11 +21,22 @@ type ProfileFormProps = {
 }
 
 const ProfileForm = ({ }: ProfileFormProps) => {
-  const methods = useForm<ProfileFormInput>()
+  const user = useUserStore.use.user()
+
+  const methods = useForm<ProfileFormInput>({
+    defaultValues: {
+      name: user.name || '',
+      imageUrl: user.imageUrl || '',
+      employeeNumber: user.employeeNumber || '',
+      phoneNumber: user.phoneNumber || '',
+      currentPassword: '',
+      password: '',
+      passwordConfirmation: '',
+    }
+  })
   const { handleSubmit, setValue, trigger } = methods
 
   const { mutate: editUser } = useEditUser()
-  const user = useUserStore.use.user()
 
   const authCheckDialogRef = useRef<HTMLDialogElement>(null)
   const googleReauthDialogRef = useRef<HTMLDialogElement>(null)
@@ -34,43 +45,75 @@ const ProfileForm = ({ }: ProfileFormProps) => {
   const handleEditUser: SubmitHandler<ProfileFormInput> = async (data) => {
     authCheckDialogRef.current?.close()
     googleReauthDialogRef.current?.close()
+
+    console.log('전송될 데이터:', data)
+
     const editedUserData = {
       ...data,
       password: data.password ? data.password : undefined,
       passwordConfirmation: data.passwordConfirmation ? data.passwordConfirmation : undefined,
     }
-    editUser(editedUserData)
-    setValue('currentPassword', '')
-    setValue('password', '')
-    setValue('passwordConfirmation', '')
+
+    console.log('편집된 데이터:', editedUserData)
+
+    editUser(editedUserData, {
+      onSuccess: (updatedUser) => {
+        console.log('업데이트된 사용자:', updatedUser)
+
+        // 비밀번호 필드만 초기화
+        setValue('currentPassword', '')
+        setValue('password', '')
+        setValue('passwordConfirmation', '')
+
+        // 업데이트된 사용자 정보로 필드 다시 설정
+        setValue('name', updatedUser.name || '')
+        setValue('employeeNumber', updatedUser.employeeNumber || '')
+        setValue('phoneNumber', updatedUser.phoneNumber || '')
+        setValue('imageUrl', updatedUser.imageUrl || '')
+      }
+    })
   }
 
-  const handleGoogleReauthSuccess = (token: string) => {
-    // 구글 재인증 성공 후 정보 수정
-    const data = methods.getValues()
-    handleEditUser(data)
+  const handleGoogleReauthSuccess = async (token: string) => {
+    try {
+      // 1. 백엔드에 구글 재인증 요청
+      const { googleReauth } = await import('@shared/api')
+      const result = await googleReauth(token)
+
+      if (result.verified) {
+        // 2. 재인증 성공 후 정보 수정
+        const data = methods.getValues()
+        handleEditUser(data)
+      } else {
+        alert('재인증에 실패했습니다.')
+        googleReauthDialogRef.current?.close()
+      }
+    } catch (error) {
+      alert('재인증 중 오류가 발생했습니다.')
+      googleReauthDialogRef.current?.close()
+    }
   }
 
   const handleClickCompletedButton = async () => {
     const isValid = await trigger()
     if (!isValid) return
 
-    // 구글 사용자는 재인증 모달, 일반 사용자는 비밀번호 인증 모달 표시
     if (isGoogleUser) {
-      googleReauthDialogRef.current?.showModal()
+      // 구글 사용자는 바로 수정
+      const data = methods.getValues()
+      handleEditUser(data)
     } else {
+      // 일반 사용자는 항상 현재 비밀번호 인증 필요
       authCheckDialogRef.current?.showModal()
     }
   }
 
   useEffect(() => {
-    setValue('imageUrl', user.imageUrl)
-    setValue('employeeNumber', user.employeeNumber)
-    setValue('phoneNumber', user.phoneNumber)
-    if (isGoogleUser) {
-      setValue('name', user.name)
-    }
-  }, [setValue, user.imageUrl, user.employeeNumber, user.phoneNumber, user.name, isGoogleUser])
+    setValue('imageUrl', user.imageUrl || '')
+    setValue('employeeNumber', user.employeeNumber || '')
+    setValue('phoneNumber', user.phoneNumber || '')
+    setValue('name', user.name || '')
+  }, [setValue, user])
 
   return (
     <FormProvider {...methods}>
@@ -82,21 +125,13 @@ const ProfileForm = ({ }: ProfileFormProps) => {
           </div>
           <div>
             <FieldLabel label='이름' />
-            {isGoogleUser ? (
-              <TextFieldConnect
-                name='name'
-                placeholder='이름을 입력해 주세요'
-                rules={{
-                  validate: value => value.trim() !== '' || '필수 입력사항입니다.',
-                }}
-              />
-            ) : (
-              <TextField
-                name='name'
-                value={user.name}
-                disabled
-              />
-            )}
+            <TextFieldConnect
+              name='name'
+              placeholder='이름을 입력해 주세요'
+              rules={{
+                validate: value => value.trim() !== '' || '필수 입력사항입니다.',
+              }}
+            />
           </div>
           <div>
             <FieldLabel label='이메일' />
@@ -139,10 +174,11 @@ const ProfileForm = ({ }: ProfileFormProps) => {
                 <PasswordFieldConnect
                   name='password'
                   autoComplete='new-password'
+                  placeholder='변경하지 않으려면 비워두세요'
                   rules={{
-                    pattern: {
-                      value: PASSWORD_VALIDATION_REGEXP,
-                      message: '영문, 숫자 조합 8~16자리로 입력해주세요',
+                    validate: value => {
+                      if (!value) return true // 비어있으면 통과 (변경 안함)
+                      return PASSWORD_VALIDATION_REGEXP.test(value) || '영문, 숫자 조합 8~16자리로 입력해주세요'
                     },
                   }}
                 />
@@ -154,7 +190,11 @@ const ProfileForm = ({ }: ProfileFormProps) => {
                   autoComplete='new-password'
                   placeholder='새 비밀번호를 한번 더 입력해 주세요'
                   rules={{
-                    validate: value => value === methods.getValues('password') || '비밀번호가 일치하지 않습니다',
+                    validate: value => {
+                      const password = methods.getValues('password')
+                      if (!password && !value) return true // 둘 다 비어있으면 통과
+                      return value === password || '비밀번호가 일치하지 않습니다'
+                    },
                   }}
                 />
               </div>

@@ -1,15 +1,15 @@
-import { UserInfo } from '@shared/types'
-import { create } from 'zustand'
-import createSelectors from './util/createSelectors'
+import { UserInfo } from '@shared/types';
+import { create } from 'zustand';
+import createSelectors from './util/createSelectors';
 
 type UserState = {
-  user: UserInfo
-}
+  user: UserInfo;
+};
 
 type UserAction = {
-  setUser: (user: Partial<UserInfo>) => void
-  resetUser: () => void
-}
+  setUser: (user: Partial<UserInfo>) => void;
+  resetUser: () => void;
+};
 
 const initialUser: UserInfo = {
   id: -1,
@@ -18,23 +18,22 @@ const initialUser: UserInfo = {
   employeeNumber: '',
   phoneNumber: '',
   imageUrl: null,
+  authProvider: 'local',
   company: {
     companyName: '',
   },
   isAdmin: false,
-}
+};
 
 const DEFAULT_PROPS: UserState = {
   user: initialUser,
-}
+};
 
-const useUserStoreBase = create<UserState & UserAction>(
-  (set) => ({
-    ...DEFAULT_PROPS,
-    setUser: (user) => set((state) => ({ user: { ...state.user, ...user } })),
-    resetUser: () => set(() => ({ ...DEFAULT_PROPS })),
-  }),
-)
+const useUserStoreBase = create<UserState & UserAction>((set) => ({
+  ...DEFAULT_PROPS,
+  setUser: (user) => set((state) => ({ user: { ...state.user, ...user } })),
+  resetUser: () => set(() => ({ ...DEFAULT_PROPS })),
+}));
 
-const useUserStore = createSelectors(useUserStoreBase)
-export default useUserStore
+const useUserStore = createSelectors(useUserStoreBase);
+export default useUserStore;
