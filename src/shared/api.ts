@@ -61,8 +61,8 @@ export const googleReauth = async (token: string) => {
 
 // User related APIs
 export const getUserInfo = async () => {
-  const response = await axios.get<UserInfo>('/users/me')
-  return response.data
+  const response = await axios.get<{ status: string; data: UserInfo }>('/users/me')
+  return response.data.data
 }
 
 export interface CheckPasswordResponse {
@@ -77,8 +77,8 @@ export const checkPassword = async (
 }
 
 export const editUser = async (data: ProfileFormInput) => {
-  const response = await axios.patch<UserInfo>('/users/me', data)
-  return response.data
+  const response = await axios.patch<{ status: string; data: UserInfo }>('/users/me', data)
+  return response.data.data
 }
 
 export const deleteUser = async (id: number) => {

@@ -31,6 +31,7 @@ const UserList = ({ keyword, page, searchBy }: UserListProps) => {
     email: user.email,
     employeeNumber: user.employeeNumber,
     phoneNumber: user.phoneNumber,
+    authProvider: user.authProvider,
   }))
 
   return (

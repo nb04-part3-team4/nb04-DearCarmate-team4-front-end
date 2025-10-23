@@ -21,22 +21,11 @@ type ProfileFormProps = {
 }
 
 const ProfileForm = ({ }: ProfileFormProps) => {
-  const user = useUserStore.use.user()
-
-  const methods = useForm<ProfileFormInput>({
-    defaultValues: {
-      name: user.name || '',
-      imageUrl: user.imageUrl || '',
-      employeeNumber: user.employeeNumber || '',
-      phoneNumber: user.phoneNumber || '',
-      currentPassword: '',
-      password: '',
-      passwordConfirmation: '',
-    }
-  })
+  const methods = useForm<ProfileFormInput>()
   const { handleSubmit, setValue, trigger } = methods
 
   const { mutate: editUser } = useEditUser()
+  const user = useUserStore.use.user()
 
   const authCheckDialogRef = useRef<HTMLDialogElement>(null)
   const googleReauthDialogRef = useRef<HTMLDialogElement>(null)
@@ -46,32 +35,16 @@ const ProfileForm = ({ }: ProfileFormProps) => {
     authCheckDialogRef.current?.close()
     googleReauthDialogRef.current?.close()
 
-    console.log('전송될 데이터:', data)
-
     const editedUserData = {
       ...data,
       password: data.password ? data.password : undefined,
       passwordConfirmation: data.passwordConfirmation ? data.passwordConfirmation : undefined,
     }
 
-    console.log('편집된 데이터:', editedUserData)
-
-    editUser(editedUserData, {
-      onSuccess: (updatedUser) => {
-        console.log('업데이트된 사용자:', updatedUser)
-
-        // 비밀번호 필드만 초기화
-        setValue('currentPassword', '')
-        setValue('password', '')
-        setValue('passwordConfirmation', '')
-
-        // 업데이트된 사용자 정보로 필드 다시 설정
-        setValue('name', updatedUser.name || '')
-        setValue('employeeNumber', updatedUser.employeeNumber || '')
-        setValue('phoneNumber', updatedUser.phoneNumber || '')
-        setValue('imageUrl', updatedUser.imageUrl || '')
-      }
-    })
+    editUser(editedUserData)
+    setValue('currentPassword', '')
+    setValue('password', '')
+    setValue('passwordConfirmation', '')
   }
 
   const handleGoogleReauthSuccess = async (token: string) => {
@@ -109,11 +82,10 @@ const ProfileForm = ({ }: ProfileFormProps) => {
   }
 
   useEffect(() => {
-    setValue('imageUrl', user.imageUrl || '')
-    setValue('employeeNumber', user.employeeNumber || '')
-    setValue('phoneNumber', user.phoneNumber || '')
-    setValue('name', user.name || '')
-  }, [setValue, user])
+    setValue('imageUrl', user.imageUrl)
+    setValue('employeeNumber', user.employeeNumber)
+    setValue('phoneNumber', user.phoneNumber)
+  }, [setValue, user.imageUrl, user.employeeNumber, user.phoneNumber])
 
   return (
     <FormProvider {...methods}>
@@ -125,12 +97,10 @@ const ProfileForm = ({ }: ProfileFormProps) => {
           </div>
           <div>
             <FieldLabel label='이름' />
-            <TextFieldConnect
+            <TextField
               name='name'
-              placeholder='이름을 입력해 주세요'
-              rules={{
-                validate: value => value.trim() !== '' || '필수 입력사항입니다.',
-              }}
+              value={user.name}
+              disabled
             />
           </div>
           <div>
@@ -174,11 +144,10 @@ const ProfileForm = ({ }: ProfileFormProps) => {
                 <PasswordFieldConnect
                   name='password'
                   autoComplete='new-password'
-                  placeholder='변경하지 않으려면 비워두세요'
                   rules={{
-                    validate: value => {
-                      if (!value) return true // 비어있으면 통과 (변경 안함)
-                      return PASSWORD_VALIDATION_REGEXP.test(value) || '영문, 숫자 조합 8~16자리로 입력해주세요'
+                    pattern: {
+                      value: PASSWORD_VALIDATION_REGEXP,
+                      message: '영문, 숫자 조합 8~16자리로 입력해주세요',
                     },
                   }}
                 />
@@ -190,11 +159,7 @@ const ProfileForm = ({ }: ProfileFormProps) => {
                   autoComplete='new-password'
                   placeholder='새 비밀번호를 한번 더 입력해 주세요'
                   rules={{
-                    validate: value => {
-                      const password = methods.getValues('password')
-                      if (!password && !value) return true // 둘 다 비어있으면 통과
-                      return value === password || '비밀번호가 일치하지 않습니다'
-                    },
+                    validate: value => value === methods.getValues('password') || '비밀번호가 일치하지 않습니다',
                   }}
                 />
               </div>
